@@ -3,6 +3,9 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/muhangga/config"
+	"github.com/muhangga/internal/delivery"
+	"github.com/muhangga/internal/repository"
+	"github.com/muhangga/internal/service"
 	"gorm.io/gorm"
 )
 
@@ -33,6 +36,19 @@ func (s *server) RunServer() {
 			"message": "pong",
 		})
 	})
+
+	userRepository := repository.NewUserRepository(s.DB())
+
+	jwtService := service.NewJwtService()
+
+	authRepository := repository.NewAuthRepository(s.DB())
+	authService := service.NewAuthService(authRepository, userRepository)
+	authController := delivery.NewAuthDelivery(authService, jwtService)
+
+	api := s.httpServer.Group("/api")
+
+	api.POST("/login", authController.Login)
+	api.POST("/register", authController.Register)
 
 	if err := s.httpServer.Run(); err != nil {
 		panic(err)
